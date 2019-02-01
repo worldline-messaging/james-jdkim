@@ -25,6 +25,10 @@ public class FailException extends Exception {
 
     private String relatedRecordIdentity = null;
 
+    private String relatedDomain = null;
+
+    private String relatedSelector = null;
+
     public FailException(String error) {
         super(error);
     }
@@ -39,5 +43,21 @@ public class FailException extends Exception {
 
     public void setRelatedRecordIdentity(String relatedRecordIdentity) {
         this.relatedRecordIdentity = relatedRecordIdentity;
+    }
+
+    public String getRelatedDomain() {
+        return relatedDomain;
+    }
+
+    public void setRelatedDomain(String relatedDomain) {
+        this.relatedDomain = relatedDomain;
+    }
+
+    public String getRelatedSelector() {
+        return relatedSelector;
+    }
+
+    public void setRelatedSelector(String relatedSelector) {
+        this.relatedSelector = relatedSelector;
     }
 }

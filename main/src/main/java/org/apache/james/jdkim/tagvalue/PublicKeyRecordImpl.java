@@ -21,6 +21,7 @@ package org.apache.james.jdkim.tagvalue;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.james.jdkim.api.PublicKeyRecord;
+import org.apache.james.jdkim.exceptions.RevokedKeyException;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -83,7 +84,7 @@ public class PublicKeyRecordImpl extends TagValue implements PublicKeyRecord {
             throw new IllegalStateException(
                     "Unknown version for v= (expected DKIM1): " + getValue("v"));
         if ("".equals(getValue("p")))
-            throw new IllegalStateException("Revoked key. 'p=' in record");
+            throw new RevokedKeyException("Revoked key. 'p=' in record");
     }
 
     /**

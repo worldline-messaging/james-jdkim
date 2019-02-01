@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.james.jdkim.api.PublicKeyRecordRetriever;
+import org.apache.james.jdkim.exceptions.DnsPermFailException;
+import org.apache.james.jdkim.exceptions.DnsTempFailException;
 import org.apache.james.jdkim.exceptions.PermFailException;
 import org.apache.james.jdkim.exceptions.TempFailException;
 import org.xbill.DNS.Lookup;
@@ -51,9 +53,13 @@ public class DNSPublicKeyRecordRetriever implements PublicKeyRecordRetriever {
     public List<String> getRecords(CharSequence methodAndOptions,
                                    CharSequence selector, CharSequence token)
             throws TempFailException, PermFailException {
-        if (!"dns/txt".equals(methodAndOptions))
-            throw new PermFailException("Only dns/txt is supported: "
+        if (!"dns/txt".equals(methodAndOptions)) {
+            DnsPermFailException dpfe = new DnsPermFailException("Only dns/txt is supported: "
                     + methodAndOptions + " options unsupported.");
+            dpfe.setRelatedDomain(token.toString());
+            dpfe.setRelatedSelector(selector.toString());
+            throw dpfe;
+        }
         try {
             Lookup query = new Lookup(selector + "._domainkey." + token,
                     Type.TXT);
@@ -63,7 +69,10 @@ public class DNSPublicKeyRecordRetriever implements PublicKeyRecordRetriever {
             int queryResult = query.getResult();
 
             if (queryResult == Lookup.TRY_AGAIN) {
-                throw new TempFailException(query.getErrorString());
+                DnsTempFailException dtfe = new DnsTempFailException(query.getErrorString());
+                dtfe.setRelatedDomain(token.toString());
+                dtfe.setRelatedSelector(selector.toString());
+                throw dtfe;
             }
 
             return convertRecordsToList(rr);

@@ -20,6 +20,7 @@
 package org.apache.james.jdkim;
 
 import org.apache.james.jdkim.api.PublicKeyRecord;
+import org.apache.james.jdkim.exceptions.RevokedKeyException;
 import org.apache.james.jdkim.tagvalue.PublicKeyRecordImpl;
 import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
@@ -66,7 +67,7 @@ public class PublicKeyRecordTest {
         try {
             pkr.validate();
             fail("Expected failure: revoked key");
-        } catch (IllegalStateException e) {
+        } catch (RevokedKeyException e) {
         }
     }
 

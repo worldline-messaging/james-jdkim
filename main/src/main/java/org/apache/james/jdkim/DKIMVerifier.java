@@ -24,9 +24,7 @@ import org.apache.james.jdkim.api.Headers;
 import org.apache.james.jdkim.api.PublicKeyRecord;
 import org.apache.james.jdkim.api.PublicKeyRecordRetriever;
 import org.apache.james.jdkim.api.SignatureRecord;
-import org.apache.james.jdkim.exceptions.FailException;
-import org.apache.james.jdkim.exceptions.PermFailException;
-import org.apache.james.jdkim.exceptions.TempFailException;
+import org.apache.james.jdkim.exceptions.*;
 import org.apache.james.jdkim.impl.BodyHasherImpl;
 import org.apache.james.jdkim.impl.CompoundBodyHasher;
 import org.apache.james.jdkim.impl.DNSPublicKeyRecordRetriever;
@@ -83,9 +81,9 @@ public class DKIMVerifier extends DKIMCommon {
 
     public PublicKeyRecord publicKeySelector(List<String> records)
             throws PermFailException {
-        String lastError = null;
+        PermFailException lastError = null;
         if (records == null || records.isEmpty()) {
-            lastError = "no key for signature";
+            lastError = new PermFailException("no key for signature");
         } else {
             for (String record : records) {
                 try {
@@ -97,12 +95,14 @@ public class DKIMVerifier extends DKIMCommon {
                     return pk;
                 } catch (IllegalStateException e) {
                     // do this at last.
-                    lastError = "invalid key for signature: " + e.getMessage();
+                    lastError = new PermFailException("invalid key for signature: " + e.getMessage());
+                } catch (RevokedKeyException e) {
+                    lastError = new RevokedKeyPermFailException(e.getMessage(),e);
                 }
             }
         }
         // return PERMFAIL ($error).
-        throw new PermFailException(lastError);
+        throw lastError;
     }
 
     /**
@@ -179,10 +179,18 @@ public class DKIMVerifier extends DKIMCommon {
         }
         if (key == null) {
             if (lastTempFailure != null) {
-                if (sign != null) lastTempFailure.setRelatedRecordIdentity(sign.getIdentity().toString());
+                if (sign != null) {
+                    lastTempFailure.setRelatedRecordIdentity(sign.getIdentity().toString());
+                    lastTempFailure.setRelatedDomain(sign.getDToken().toString());
+                    lastTempFailure.setRelatedSelector(sign.getSelector().toString());
+                }
                 throw lastTempFailure;
             } else if (lastPermFailure != null) {
-                if (sign != null) lastPermFailure.setRelatedRecordIdentity(sign.getIdentity().toString());
+                if (sign != null) {
+                    lastPermFailure.setRelatedRecordIdentity(sign.getIdentity().toString());
+                    lastPermFailure.setRelatedDomain(sign.getDToken().toString());
+                    lastPermFailure.setRelatedSelector(sign.getSelector().toString());
+                }
                 throw lastPermFailure;
             }            // this is unexpected because the publicKeySelector always returns
             // null or exception
@@ -399,11 +407,15 @@ public class DKIMVerifier extends DKIMCommon {
             byte[] expectedBodyHash = bhj.getSignatureRecord().getBodyHash();
 
             if (!Arrays.equals(expectedBodyHash, computedHash)) {
+                BodyHashException bhe = new BodyHashException(
+                        "Computed bodyhash is different from the expected one");
+                bhe.setRelatedDomain(bhj.getSignatureRecord().getDToken().toString());
+                bhe.setRelatedSelector(bhj.getSignatureRecord().getSelector().toString());
+                bhe.setRelatedRecordIdentity(bhj.getSignatureRecord().getIdentity().toString());
+                bhe.setCanonicalizedBody(computedHash);
                 compoundBodyHasher.getSignatureExceptions()
-                        .put(
-                                "DKIM-Signature:" + bhj.getSignatureRecord().toString(),
-                                new PermFailException(
-                                        "Computed bodyhash is different from the expected one"));
+                        .put("DKIM-Signature:" + bhj.getSignatureRecord().toString(),
+                                bhe);
             } else {
                 verifiedSignatures.add(bhj.getSignatureRecord());
             }
@@ -466,7 +478,8 @@ public class DKIMVerifier extends DKIMCommon {
      */
     private void signatureVerify(Headers h, SignatureRecord sign,
                                  byte[] decoded, PublicKeyRecord key, List<CharSequence> headers)
-            throws PermFailException {
+            throws SignaturePermFailException {
+        SignaturePermFailException spfe = null;
         try {
             Signature signature = Signature.getInstance(sign.getHashMethod()
                     .toString().toUpperCase()
@@ -474,22 +487,31 @@ public class DKIMVerifier extends DKIMCommon {
             PublicKey publicKey;
             try {
                 publicKey = key.getPublicKey();
+                signature.initVerify(publicKey);
             } catch (IllegalStateException e) {
-                throw new PermFailException("Invalid Public Key: " + e.getMessage(), e);
+                spfe = new SignaturePermFailException("Invalid Public Key: " + e.getMessage(), e);
             }
-            signature.initVerify(publicKey);
 
             signatureCheck(h, sign, headers, signature);
 
             if (!signature.verify(decoded))
-                throw new PermFailException("Header signature does not verify");
+                spfe = new SignaturePermFailException("Header signature does not verify");
+        } catch(PermFailException e) {
+            spfe = new SignaturePermFailException(e.getMessage(), e);
         } catch (InvalidKeyException e) {
-            throw new PermFailException(e.getMessage(), e);
+            spfe = new SignaturePermFailException(e.getMessage(), e);
         } catch (NoSuchAlgorithmException e) {
-            throw new PermFailException(e.getMessage(), e);
+            spfe = new SignaturePermFailException(e.getMessage(), e);
         } catch (SignatureException e) {
-            throw new PermFailException(e.getMessage(), e);
+            spfe = new SignaturePermFailException(e.getMessage(), e);
         }
+        if(spfe!=null) {
+            spfe.setRelatedDomain(sign.getDToken().toString());
+            spfe.setRelatedRecordIdentity(sign.getIdentity().toString());
+            spfe.setRelatedSelector(sign.getSelector().toString());
+            throw spfe;
+        }
+
     }
 
 }

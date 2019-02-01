@@ -22,6 +22,7 @@ package org.apache.james.jdkim;
 import org.apache.james.jdkim.api.Headers;
 import org.apache.james.jdkim.api.SignatureRecord;
 import org.apache.james.jdkim.exceptions.PermFailException;
+import org.apache.james.jdkim.exceptions.SignaturePermFailException;
 
 import java.io.IOException;
 import java.io.InputStream;

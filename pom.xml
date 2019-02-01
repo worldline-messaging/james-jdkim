@@ -30,7 +30,7 @@
 
     <groupId>org.apache.james.jdkim</groupId>
     <artifactId>apache-jdkim-project</artifactId>
-    <version>0.3-SNAPSHOT</version>
+    <version>0.3.AWL</version>
     <packaging>pom</packaging>
 
     <name>Apache James :: jDKIM :: DomainKey Project</name>
@@ -45,20 +45,17 @@
     </modules>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/james/jdkim/trunk</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/james/jdkim/trunk</developerConnection>
-        <url>http://svn.apache.org/viewcvs.cgi/james/jdkim/trunk/?root=Apache-SVN</url>
+        <connection>scm:git:https://github.com/worldline-messaging/james-jdkim</connection>
+        <developerConnection>scm:git:https://github.com/worldline-messaging/james-jdkim</developerConnection>
+        <url>scm:git:https://github.com/worldline-messaging/james-jdkim</url>
     </scm>
-    <issueManagement>
-        <system>JIRA</system>
-        <url>https://issues.apache.org/jira/browse/JDKIM</url>
-    </issueManagement>
 
     <distributionManagement>
-        <site>
-            <id>jdkim-current-website</id>
-            <url>scpexe://people.apache.org/www/james.apache.org/jdkim/</url>
-        </site>
+        <repository>
+            <id>bintray-worldline-messaging-org-maven</id>
+            <name>worldline-messaging-org-maven</name>
+            <url>https://api.bintray.com/maven/worldline-messaging-org/maven/jdkim/;publish=1</url>
+        </repository>
     </distributionManagement>
 
     <properties>
@@ -67,7 +64,7 @@
         <geronimo-javamail.version>1.8.3</geronimo-javamail.version>
         <commons-codec.version>1.7</commons-codec.version>
         <commons-logging.version>1.1.1</commons-logging.version>
-        <apache-mailet.version>3.1.0-SNAPSHOT</apache-mailet.version>
+        <apache-mailet.version>3.1.0</apache-mailet.version>
         <dnsjava.version>2.1.1</dnsjava.version>
         <not-yet-commons-ssl.version>0.3.11</not-yet-commons-ssl.version>
         <apache-mime4j.version>0.8.1</apache-mime4j.version>
