@@ -41,6 +41,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.List;
 
+import static org.apache.james.jdkim.api.Failure.Reason.*;
+
 public class DKIMSigner extends DKIMCommon {
 
     private final PrivateKey privateKey;
@@ -73,7 +75,7 @@ public class DKIMSigner extends DKIMCommon {
                 // This can only be a MimeException but we don't declare to allow usage of
                 // DKIMSigner without Mime4J dependency.
                 throw new PermFailException("MIME parsing exception: "
-                        + e1.getMessage(), e1);
+                        + e1.getMessage(), MIME_PARSING_ERROR, e1);
             }
 
             try {
@@ -98,7 +100,7 @@ public class DKIMSigner extends DKIMCommon {
     public String sign(Headers message, BodyHasher bh) throws PermFailException {
         if (!(bh instanceof BodyHasherImpl)) {
             throw new PermFailException(
-                    "Supplied BodyHasher has not been generated with this signer");
+                    "Supplied BodyHasher has not been generated with this signer", IMPLEMENTATION_ERROR);
         }
         BodyHasherImpl bhj = (BodyHasherImpl) bh;
         byte[] computedHash = bhj.getDigest();
@@ -121,13 +123,13 @@ public class DKIMSigner extends DKIMCommon {
 
             return "DKIM-Signature:" + bhj.getSignatureRecord().toString();
         } catch (InvalidKeyException e) {
-            throw new PermFailException("Invalid key: " + e.getMessage(), e);
+            throw new PermFailException("Invalid key: " + e.getMessage(), INVALID_SIGNATURE_KEY, e);
         } catch (NoSuchAlgorithmException e) {
             throw new PermFailException("Unknown algorythm: " + e.getMessage(),
-                    e);
+                    UNSUPPORTED_SIGNATURE_ALGORITHM, e);
         } catch (SignatureException e) {
             throw new PermFailException("Signing exception: " + e.getMessage(),
-                    e);
+                    SIGNATURE_ERROR, e);
         }
     }
 

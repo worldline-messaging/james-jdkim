@@ -19,22 +19,28 @@
 
 package org.apache.james.jdkim.exceptions;
 
+import org.apache.james.jdkim.api.Failure;
+
 public class FailException extends Exception {
 
     private static final long serialVersionUID = 1584103235607992818L;
 
+    private Failure.Reason reason = null;
+
     private String relatedRecordIdentity = null;
 
-    private String relatedDomain = null;
-
-    private String relatedSelector = null;
-
-    public FailException(String error) {
+    public FailException(String error, Failure.Reason reason) {
         super(error);
+        this.reason = reason;
     }
 
-    public FailException(String string, Exception e) {
+    public FailException(String string, Failure.Reason reason, Exception e) {
         super(string, e);
+        this.reason = reason;
+    }
+
+    public Failure.Reason getReason() {
+        return reason;
     }
 
     public String getRelatedRecordIdentity() {
@@ -43,21 +49,5 @@ public class FailException extends Exception {
 
     public void setRelatedRecordIdentity(String relatedRecordIdentity) {
         this.relatedRecordIdentity = relatedRecordIdentity;
-    }
-
-    public String getRelatedDomain() {
-        return relatedDomain;
-    }
-
-    public void setRelatedDomain(String relatedDomain) {
-        this.relatedDomain = relatedDomain;
-    }
-
-    public String getRelatedSelector() {
-        return relatedSelector;
-    }
-
-    public void setRelatedSelector(String relatedSelector) {
-        this.relatedSelector = relatedSelector;
     }
 }

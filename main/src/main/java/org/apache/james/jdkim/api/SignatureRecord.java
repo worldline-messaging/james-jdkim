@@ -69,4 +69,6 @@ public interface SignatureRecord {
 
     public abstract Long getSignatureTimestamp();
 
+    public abstract String getParameter(String key, Boolean removeFWS);
+
 }

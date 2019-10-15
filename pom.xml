@@ -30,7 +30,7 @@
 
     <groupId>org.apache.james.jdkim</groupId>
     <artifactId>apache-jdkim-project</artifactId>
-    <version>0.3.AWL</version>
+    <version>0.3.AWL.2</version>
     <packaging>pom</packaging>
 
     <name>Apache James :: jDKIM :: DomainKey Project</name>

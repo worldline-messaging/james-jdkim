@@ -19,12 +19,18 @@
 
 package org.apache.james.jdkim.exceptions;
 
+import org.apache.james.jdkim.api.Failure;
+
 public class TempFailException extends FailException {
 
     private static final long serialVersionUID = 1304733570453821093L;
 
-    public TempFailException(String error) {
-        super(error);
+    public TempFailException(String error, Failure.Reason reason) {
+        super(error, reason);
+    }
+
+    public TempFailException(String string, Failure.Reason reason, Exception e) {
+        super(string, reason, e);
     }
 
 }

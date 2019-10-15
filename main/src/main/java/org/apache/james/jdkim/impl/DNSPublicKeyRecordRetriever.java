@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.james.jdkim.api.PublicKeyRecordRetriever;
-import org.apache.james.jdkim.exceptions.DnsPermFailException;
-import org.apache.james.jdkim.exceptions.DnsTempFailException;
 import org.apache.james.jdkim.exceptions.PermFailException;
 import org.apache.james.jdkim.exceptions.TempFailException;
 import org.xbill.DNS.Lookup;
@@ -33,6 +31,8 @@ import org.xbill.DNS.Resolver;
 import org.xbill.DNS.TXTRecord;
 import org.xbill.DNS.TextParseException;
 import org.xbill.DNS.Type;
+
+import static org.apache.james.jdkim.api.Failure.Reason.*;
 
 public class DNSPublicKeyRecordRetriever implements PublicKeyRecordRetriever {
 
@@ -53,13 +53,9 @@ public class DNSPublicKeyRecordRetriever implements PublicKeyRecordRetriever {
     public List<String> getRecords(CharSequence methodAndOptions,
                                    CharSequence selector, CharSequence token)
             throws TempFailException, PermFailException {
-        if (!"dns/txt".equals(methodAndOptions)) {
-            DnsPermFailException dpfe = new DnsPermFailException("Only dns/txt is supported: "
-                    + methodAndOptions + " options unsupported.");
-            dpfe.setRelatedDomain(token.toString());
-            dpfe.setRelatedSelector(selector.toString());
-            throw dpfe;
-        }
+        if (!"dns/txt".equals(methodAndOptions))
+            throw new PermFailException("Only dns/txt is supported: "
+                    + methodAndOptions + " options unsupported.", UNSUPPORTED_DNS_QUERY_METHOD);
         try {
             Lookup query = new Lookup(selector + "._domainkey." + token,
                     Type.TXT);
@@ -69,10 +65,7 @@ public class DNSPublicKeyRecordRetriever implements PublicKeyRecordRetriever {
             int queryResult = query.getResult();
 
             if (queryResult == Lookup.TRY_AGAIN) {
-                DnsTempFailException dtfe = new DnsTempFailException(query.getErrorString());
-                dtfe.setRelatedDomain(token.toString());
-                dtfe.setRelatedSelector(selector.toString());
-                throw dtfe;
+                throw new TempFailException(query.getErrorString(), DNS_LOOKUP_ERROR);
             }
 
             return convertRecordsToList(rr);

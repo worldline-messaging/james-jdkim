@@ -28,6 +28,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.james.jdkim.api.Failure.Reason.*;
+
 /**
  * This is a mock public key record retriever that store the "registry" in a
  * local map.
@@ -65,8 +67,8 @@ public class MockPublicKeyRecordRetriever implements PublicKeyRecordRetriever {
             if (res == null || res.size() > 0)
                 return res;
             else
-                throw new TempFailException("Timout or servfail");
+                throw new TempFailException("Timout or servfail", DNS_LOOKUP_ERROR);
         } else
-            throw new PermFailException("Unsupported method");
+            throw new PermFailException("Unsupported method", IMPLEMENTATION_ERROR);
     }
 }

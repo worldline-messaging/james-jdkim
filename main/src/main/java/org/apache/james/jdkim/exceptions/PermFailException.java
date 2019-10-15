@@ -20,20 +20,22 @@
 package org.apache.james.jdkim.exceptions;
 
 
+import org.apache.james.jdkim.api.Failure;
+
 public class PermFailException extends FailException {
 
     private static final long serialVersionUID = 1304736020453821093L;
 
-    public PermFailException(String error) {
-        super(error);
+    public PermFailException(String error, Failure.Reason reason) {
+        super(error, reason);
     }
 
-    public PermFailException(String string, Exception e) {
-        super(string, e);
+    public PermFailException(String string, Failure.Reason reason, Exception e) {
+        super(string, reason, e);
     }
 
-    public PermFailException(String string, String signatureIdentity) {
-        super(string);
+    public PermFailException(String string, Failure.Reason reason, String signatureIdentity) {
+        super(string, reason);
         setRelatedRecordIdentity(signatureIdentity);
     }
 

@@ -21,7 +21,8 @@ package org.apache.james.jdkim.tagvalue;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.james.jdkim.api.PublicKeyRecord;
-import org.apache.james.jdkim.exceptions.RevokedKeyException;
+import org.apache.james.jdkim.exceptions.PermFailException;
+import org.apache.james.jdkim.exceptions.RuntimePermFailException;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -34,6 +35,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import static org.apache.james.jdkim.api.Failure.Reason.REVOKED_SIGNATURE_KEY;
 
 public class PublicKeyRecordImpl extends TagValue implements PublicKeyRecord {
 
@@ -84,7 +87,7 @@ public class PublicKeyRecordImpl extends TagValue implements PublicKeyRecord {
             throw new IllegalStateException(
                     "Unknown version for v= (expected DKIM1): " + getValue("v"));
         if ("".equals(getValue("p")))
-            throw new RevokedKeyException("Revoked key. 'p=' in record");
+            throw new RuntimePermFailException(new PermFailException("Revoked key. 'p=' in record", REVOKED_SIGNATURE_KEY));
     }
 
     /**

@@ -123,6 +123,14 @@ public class SignatureRecordImpl extends TagValue implements SignatureRecord {
         return lifetime + measure;
     }
 
+    public String getParameter(String key, Boolean removeFWS) {
+        CharSequence v = getValue(key);
+        if (v == null) return null;
+        String s = v.toString();
+        if (removeFWS) s = s.replaceAll("[\r\n\t ]", "");
+        return s;
+    }
+
     /**
      * @see org.apache.james.jdkim.api.SignatureRecord#getHeaders()
      */

@@ -24,9 +24,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.james.jdkim.api.PublicKeyRecordRetriever;
-import org.apache.james.jdkim.exceptions.DnsPermFailException;
 import org.apache.james.jdkim.exceptions.PermFailException;
 import org.apache.james.jdkim.exceptions.TempFailException;
+
+import static org.apache.james.jdkim.api.Failure.Reason.IMPLEMENTATION_ERROR;
 
 public class MultiplexingPublicKeyRecordRetriever implements
         PublicKeyRecordRetriever {
@@ -56,12 +57,9 @@ public class MultiplexingPublicKeyRecordRetriever implements
         if (pkrr != null) {
             return pkrr.getRecords(methodAndOption, selector, token);
         } else {
-            DnsPermFailException dpfe = new DnsPermFailException(
+            throw new PermFailException(
                     "Unknown public key record retrieving method: "
-                            + methodAndOption);
-            dpfe.setRelatedDomain(token.toString());
-            dpfe.setRelatedSelector(selector.toString());
-            throw dpfe;
+                            + methodAndOption, IMPLEMENTATION_ERROR);
         }
     }
 

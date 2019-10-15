@@ -22,7 +22,6 @@ package org.apache.james.jdkim;
 import org.apache.james.jdkim.api.Headers;
 import org.apache.james.jdkim.api.SignatureRecord;
 import org.apache.james.jdkim.exceptions.PermFailException;
-import org.apache.james.jdkim.exceptions.SignaturePermFailException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +32,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import static org.apache.james.jdkim.api.Failure.Reason.UNSUPPORTED_HEADER_CANONICALIZATION_METHOD;
 
 public abstract class DKIMCommon {
 
@@ -70,7 +71,7 @@ public abstract class DKIMCommon {
         if (!relaxedHeaders
                 && !SignatureRecord.SIMPLE.equals(sign.getHeaderCanonicalisationMethod())) {
             throw new PermFailException("Unsupported canonicalization algorythm: "
-                    + sign.getHeaderCanonicalisationMethod());
+                    + sign.getHeaderCanonicalisationMethod(), UNSUPPORTED_HEADER_CANONICALIZATION_METHOD);
         }
 
         // NOTE: this could be improved by using iterators.

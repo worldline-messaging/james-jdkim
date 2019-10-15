@@ -32,9 +32,12 @@ import org.apache.james.jdkim.canon.RelaxedBodyCanonicalizer;
 import org.apache.james.jdkim.canon.SimpleBodyCanonicalizer;
 import org.apache.james.jdkim.exceptions.PermFailException;
 
+import static org.apache.james.jdkim.api.Failure.Reason.*;
+
 public class BodyHasherImpl implements BodyHasher {
 
     private static final boolean DEEP_DEBUG = false;
+    private SignatureControl control;
     private SignatureRecord sign;
     private DigestOutputStream digesterOS;
     private OutputStream out;
@@ -45,13 +48,13 @@ public class BodyHasherImpl implements BodyHasher {
             md = MessageDigest.getInstance(sign.getHashAlgo().toString());
         } catch (NoSuchAlgorithmException e) {
             throw new PermFailException("Unsupported algorythm: "
-                    + sign.getHashAlgo(), e);
+                    + sign.getHashAlgo(), UNSUPPORTED_SIGNATURE_ALGORITHM, e);
         }
         
         try {
             sign.validate();
         } catch (IllegalStateException e) {
-            throw new PermFailException("Invalid signature template", e);
+            throw new PermFailException("Invalid signature template", INVALID_SIGNATURE, e);
         }
 
         int limit = sign.getBodyHashLimit();
@@ -65,7 +68,7 @@ public class BodyHasherImpl implements BodyHasher {
                         .getBodyCanonicalisationMethod())) {
             throw new PermFailException(
                     "Unsupported body canonicalization method: "
-                            + sign.getBodyCanonicalisationMethod());
+                            + sign.getBodyCanonicalisationMethod(), UNSUPPORTED_BODY_CANONICALIZATION_METHOD);
         }
 
         DigestOutputStream dout = new DigestOutputStream(md);
@@ -90,6 +93,14 @@ public class BodyHasherImpl implements BodyHasher {
         else
             out = new SimpleBodyCanonicalizer(out);
         return out;
+    }
+
+    public SignatureControl getControl() {
+        return control;
+    }
+
+    public void setControl(SignatureControl control) {
+        this.control = control;
     }
 
     /**
