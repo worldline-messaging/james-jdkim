@@ -25,12 +25,7 @@ import java.util.List;
 import org.apache.james.jdkim.api.PublicKeyRecordRetriever;
 import org.apache.james.jdkim.exceptions.PermFailException;
 import org.apache.james.jdkim.exceptions.TempFailException;
-import org.xbill.DNS.Lookup;
-import org.xbill.DNS.Record;
-import org.xbill.DNS.Resolver;
-import org.xbill.DNS.TXTRecord;
-import org.xbill.DNS.TextParseException;
-import org.xbill.DNS.Type;
+import org.xbill.DNS.*;
 
 import static org.apache.james.jdkim.api.Failure.Reason.*;
 
@@ -57,7 +52,11 @@ public class DNSPublicKeyRecordRetriever implements PublicKeyRecordRetriever {
             throw new PermFailException("Only dns/txt is supported: "
                     + methodAndOptions + " options unsupported.", UNSUPPORTED_DNS_QUERY_METHOD);
         try {
-            Lookup query = new Lookup(selector + "._domainkey." + token,
+            // Make sure to use an absolute name (ending with '.') otherwise the
+            // resolver may also try by suffixing with system (resolv.conf) DNS
+            // search domains if nothing is found.
+            Name name = Name.fromString(selector + "._domainkey." + token, Name.root);
+            Lookup query = new Lookup(name,
                     Type.TXT);
             query.setResolver(resolver);
 
