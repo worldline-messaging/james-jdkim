@@ -180,9 +180,17 @@ public class PublicKeyRecordImpl extends TagValue implements PublicKeyRecord {
      * @see org.apache.james.jdkim.api.PublicKeyRecord#getPublicKey()
      */
     public PublicKey getPublicKey() {
+        String p;
+        byte[] key;
+        // Base64 format is checked by decoder and may fail.
         try {
-            String p = getValue("p").toString();
-            byte[] key = Base64.decodeBase64(p.getBytes());
+            p = getValue("p").toString();
+            key = Base64.decodeBase64(p.getBytes());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid key: "
+                    + e.getMessage());
+        }
+        try {
             KeyFactory keyFactory;
             keyFactory = KeyFactory.getInstance(getValue("k").toString());
             X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(key);
