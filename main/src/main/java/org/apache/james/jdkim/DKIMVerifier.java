@@ -419,7 +419,15 @@ public class DKIMVerifier extends DKIMCommon {
 
                     List<CharSequence> signedHeadersList = signatureRecord.getHeaders();
 
-                    byte[] decoded = signatureRecord.getSignature();
+                    // If base64 is invalid, consider signature in error, which
+                    // is what happened in previous versions that did not have
+                    // base64 sanity checks.
+                    byte[] decoded;
+                    try {
+                        decoded = signatureRecord.getSignature();
+                    } catch (IllegalArgumentException e) {
+                        throw new PermFailException(e.getMessage(), SIGNATURE_ERROR, e);
+                    }
                     signatureVerify(messageHeaders, signatureRecord, decoded,
                             publicKeyRecord, signedHeadersList);
 
@@ -464,7 +472,15 @@ public class DKIMVerifier extends DKIMCommon {
 
         for (BodyHasherImpl bhj : cbh.getBodyHashJobs().values()) {
             byte[] computedHash = bhj.getDigest();
-            byte[] expectedBodyHash = bhj.getSignatureRecord().getBodyHash();
+            // If base64 is invalid, consider signature failed, which
+            // is what happened in previous versions that did not have
+            // base64 sanity checks.
+            // Result handled in test below.
+            byte[] expectedBodyHash = null;
+            try {
+                expectedBodyHash = bhj.getSignatureRecord().getBodyHash();
+            } catch (IllegalArgumentException ignored) {
+            }
 
             if (!Arrays.equals(expectedBodyHash, computedHash)) {
                 bhj.getControl().setException(new PermFailException(
