@@ -51,9 +51,9 @@
 
     <distributionManagement>
         <repository>
-            <id>bintray-worldline-messaging-org-maven</id>
-            <name>worldline-messaging-org-maven</name>
-            <url>https://api.bintray.com/maven/worldline-messaging-org/maven/jdkim/;publish=1</url>
+            <id>messaging-maven-releases</id>
+            <name>Kazan/Nexus releases repository</name>
+            <url>https://nexus.kazan.myworldline.com/repository/messaging-maven-releases</url>
         </repository>
     </distributionManagement>
 
