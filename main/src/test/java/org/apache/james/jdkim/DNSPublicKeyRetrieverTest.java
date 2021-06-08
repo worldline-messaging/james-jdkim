@@ -28,6 +28,7 @@ import org.apache.james.jdkim.impl.DNSPublicKeyRecordRetriever;
 import org.apache.james.jdkim.tagvalue.TagValue;
 import org.junit.Assert;
 import org.junit.Test;
+import org.xbill.DNS.TextParseException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -37,6 +38,10 @@ import java.security.interfaces.RSAKey;
 import java.security.spec.InvalidKeySpecException;
 
 public class DNSPublicKeyRetrieverTest {
+
+    private MockResolver resolver = new MockResolver();
+
+    private PublicKeyRecordRetriever pkr = new DNSPublicKeyRecordRetriever(resolver);
 
     @Test
     public void testWrongOption() throws TempFailException {
@@ -53,14 +58,15 @@ public class DNSPublicKeyRetrieverTest {
         new DNSPublicKeyRecordRetriever();
     }
 
-    /**
-     * TODO: Requires internet connection
-     *
-     * @throws PermFailException
-     */
     @Test
-    public void testRetrieve() throws TempFailException, PermFailException {
-        PublicKeyRecordRetriever pkr = new DNSPublicKeyRecordRetriever();
+    public void testRetrieve() throws TempFailException, PermFailException, TextParseException {
+        // Notes:
+        // Those are the true records as of 2021-06-07.
+        // 'gamma' selector for gmail.com does not exist.
+        resolver.clear()
+            .addRecord("lima", "yahoogroups.com",
+                "k=rsa; p=MHwwDQYJKoZIhvcNAQEBBQADawAwaAJhAL10WHRWMSb9Tnl+k4Kzpc18rDCTpDT1pbK0xwkdZIZkaP8NB75qa/S57xccZlIwbI22Ooy/IY+8WxQtvE2z4W",
+                "LLNOf9hkMeicUH48TGkEoCAcaSjJz/b3NMrOy9l1U7gQIDAP//");
         pkr.getRecords("dns/txt", "lima", "yahoogroups.com");
         pkr.getRecords("dns/txt", "gamma", "gmail.com");
 
@@ -69,12 +75,12 @@ public class DNSPublicKeyRetrieverTest {
 
     @Test
     public void testKeyPair() throws PermFailException, TempFailException,
-            NoSuchAlgorithmException, InvalidKeySpecException {
-        PublicKeyRecord key = new DKIMVerifier()
-                .publicKeySelector(new MockPublicKeyRecordRetriever(
-                        "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDYDaYKXzwVYwqWbLhmuJ66aTAN8wmDR+rfHE8HfnkSOax0oIoTM5zquZrTLo30870YMfYzxwfB6j/Nz3QdwrUD/t0YMYJiUKyWJnCKfZXHJBJ+yfRHr7oW+UW3cVo9CG2bBfIxsInwYe175g9UjyntJpWueqdEIo1c2bhv9Mp66QIDAQAB;",
-                        "dummy", "dummy").getRecords("dns/txt", "dummy",
-                        "dummy"));
+        NoSuchAlgorithmException, InvalidKeySpecException, TextParseException {
+        resolver.clear()
+            .addRecord("dummy", "dummy",
+                "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDYDaYKXzwVYwqWbLhmuJ66aTAN8wmDR+rfHE8HfnkSOax0oIoTM5zquZrTLo30870YMfYzxwfB6j/Nz3QdwrUD/t0YMYJiUKyWJnCKfZXHJBJ+yfRHr7oW+UW3cVo9CG2bBfIxsInwYe175g9UjyntJpWueqdEIo1c2bhv9Mp66QIDAQAB;");
+        PublicKeyRecord key = new DKIMVerifier(pkr)
+                .publicKeySelector(pkr.getRecords("dns/txt", "dummy", "dummy"));
 
         // String privateKey =
         // "MIICXAIBAAKBgQDYDaYKXzwVYwqWbLhmuJ66aTAN8wmDR+rfHE8HfnkSOax0oIoTM5zquZrTLo30870YMfYzxwfB6j/Nz3QdwrUD/t0YMYJiUKyWJnCKfZXHJBJ+yfRHr7oW+UW3cVo9CG2bBfIxsInwYe175g9UjyntJpWueqdEIo1c2bhv9Mp66QIDAQABAoGBAI8XcwnZi0Sq5N89wF+gFNhnREFo3rsJDaCY8iqHdA5DDlnr3abb/yhipw0I/1HlgC6fIG2oexXOXFWl+USgqRt1kTt9jXhVFExg8mNko2UelAwFtsl8CRjVcYQOcedeH/WM/mXjg2wUqqZenBmlKlD6vNb70jFJeVaDJ/7n7j8BAkEA9NkH2D4Zgj/IOAVYccZYH74+VgO0e7VkUjQk9wtJ2j6cGqJ6Pfj0roVIMUWzoBb8YfErR8l6JnVQbfy83gJeiQJBAOHk3ow7JjAn8XuOyZx24KcTaYWKUkAQfRWYDFFOYQF4KV9xLSEtycY0kjsdxGKDudWcsATllFzXDCQF6DTNIWECQEA52ePwTjKrVnLTfCLEG4OgHKvlZud4amthwDyJWoMEH2ChNB2je1N4JLrABOE+hk+OuoKnKAKEjWd8f3Jg/rkCQHj8mQmogHqYWikgP/FSZl518jV48Tao3iXbqvU9Mo2T6yzYNCCqIoDLFWseNVnCTZ0Qb+IfiEf1UeZVV5o4J+ECQDatNnS3V9qYUKjj/krNRD/U0+7eh8S2ylLqD3RlSn9KtYGRMgAtUXtiOEizBH6bd/orzI9V9sw8yBz+ZqIH25Q=";
@@ -91,11 +97,11 @@ public class DNSPublicKeyRetrieverTest {
     @Test
     public void testSignVerify() throws NoSuchAlgorithmException,
             InvalidKeySpecException, IOException, FailException {
-        MockPublicKeyRecordRetriever mockPublicKeyRecordRetriever = new MockPublicKeyRecordRetriever(
-                "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDYDaYKXzwVYwqWbLhmuJ66aTAN8wmDR+rfHE8HfnkSOax0oIoTM5zquZrTLo30870YMfYzxwfB6j/Nz3QdwrUD/t0YMYJiUKyWJnCKfZXHJBJ+yfRHr7oW+UW3cVo9CG2bBfIxsInwYe175g9UjyntJpWueqdEIo1c2bhv9Mp66QIDAQAB;",
-                "selector", "example.com");
-        PublicKeyRecord key = new DKIMVerifier()
-                .publicKeySelector(mockPublicKeyRecordRetriever.getRecords(
+        resolver.clear()
+            .addRecord("selector", "example.com",
+                "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDYDaYKXzwVYwqWbLhmuJ66aTAN8wmDR+rfHE8HfnkSOax0oIoTM5zquZrTLo30870YMfYzxwfB6j/Nz3QdwrUD/t0YMYJiUKyWJnCKfZXHJBJ+yfRHr7oW+UW3cVo9CG2bBfIxsInwYe175g9UjyntJpWueqdEIo1c2bhv9Mp66QIDAQAB;");
+        PublicKeyRecord key = new DKIMVerifier(pkr)
+                .publicKeySelector(pkr.getRecords(
                         "dns/txt", "selector", "example.com"));
         String privateKeyPKCS8 = "MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBANgNpgpfPBVjCpZsuGa4nrppMA3zCYNH6t8cTwd+eRI5rHSgihMznOq5mtMujfTzvRgx9jPHB8HqP83PdB3CtQP+3RgxgmJQrJYmcIp9lcckEn7J9Eevuhb5RbdxWj0IbZsF8jGwifBh7XvmD1SPKe0mla56p0QijVzZuG/0ynrpAgMBAAECgYEAjxdzCdmLRKrk3z3AX6AU2GdEQWjeuwkNoJjyKod0DkMOWevdptv/KGKnDQj/UeWALp8gbah7Fc5cVaX5RKCpG3WRO32NeFUUTGDyY2SjZR6UDAW2yXwJGNVxhA5x514f9Yz+ZeODbBSqpl6cGaUqUPq81vvSMUl5VoMn/ufuPwECQQD02QfYPhmCP8g4BVhxxlgfvj5WA7R7tWRSNCT3C0naPpwaono9+PSuhUgxRbOgFvxh8StHyXomdVBt/LzeAl6JAkEA4eTejDsmMCfxe47JnHbgpxNphYpSQBB9FZgMUU5hAXgpX3EtIS3JxjSSOx3EYoO51ZywBOWUXNcMJAXoNM0hYQJAQDnZ4/BOMqtWctN8IsQbg6Acq+Vm53hqa2HAPIlagwQfYKE0HaN7U3gkusAE4T6GT466gqcoAoSNZ3x/cmD+uQJAePyZCaiAephaKSA/8VJmXnXyNXjxNqjeJduq9T0yjZPrLNg0IKoigMsVax41WcJNnRBv4h+IR/VR5lVXmjgn4QJANq02dLdX2phQqOP+Ss1EP9TT7t6HxLbKUuoPdGVKf0q1gZEyAC1Re2I4SLMEfpt3+ivMj1X2zDzIHP5mogfblA==";
         PrivateKey privKey = DKIMSigner.getPrivateKey(privateKeyPKCS8);
@@ -112,9 +118,20 @@ public class DNSPublicKeyRetrieverTest {
         String signedMessage = res + "\r\n"
                 + "From: test@example.com\r\nTo: test@example.com\r\n\r\nbody\r\n";
 
-        new DKIMVerifier(mockPublicKeyRecordRetriever)
+        new DKIMVerifier(pkr)
                 .verify(new ByteArrayInputStream(signedMessage.getBytes()));
 
+    }
+
+    @Test
+    public void testEscapedCharacters() throws TempFailException, PermFailException, TextParseException {
+        resolver.clear()
+            .addRecord("dummy", "dummy",
+                "v=DKIM1\r\n\t ;\r\n\t k\r\n\t = \t\r\n rsa \t ;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDYDaYKXzwVYwqWbLhmuJ66aTAN8wmDR+rfHE8HfnkSOax0oIoTM5zquZrTLo30870YMfYzxwfB6j/Nz3QdwrUD/t0YMYJiUKyWJnCKfZXHJBJ+yfRHr7oW+UW3cVo9CG2bBfIxsInwYe175g9UjyntJpWueqdEIo1c2bhv9Mp66QIDAQAB;");
+        // Incorrect parsing would fail here.
+        PublicKeyRecord pk = new DKIMVerifier(pkr)
+            .publicKeySelector(pkr.getRecords("dns/txt", "dummy", "dummy"));
+        pk.validate();
     }
 
 }
