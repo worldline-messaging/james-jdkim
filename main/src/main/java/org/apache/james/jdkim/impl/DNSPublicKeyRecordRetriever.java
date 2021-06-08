@@ -74,6 +74,24 @@ public class DNSPublicKeyRecordRetriever implements PublicKeyRecordRetriever {
         }
     }
 
+    // Notes on TXT records:
+    // Records are stored as a list of byte arrays.
+    // dnsjava exposes TXT records in three forms:
+    //  - the original (raw) list of byte arrays: record.getStringsAsByteArrays
+    //  - an escaped text version of this list: record.getStrings
+    //    - all characters with codepoint <0x20 or >=0x7F are escaped as \XXX
+    //    - '"' and '\' characters are escaped as '\"' and '\\'
+    //  - a standard text representation of the record: record.rdataToString
+    //    - each element of the escaped list is double quoted
+    // e.g.,
+    //  - raw:
+    //    [0] = <some "string">
+    //    [1] = <space and \t tabulation	>
+    //  - escaped list:
+    //    [0] = <some \"string\">
+    //    [1] = <space and \\t tabulation\009>
+    //  - standard: "some \"string\"" "space and tabulation\009"
+
     /**
      * Convert the given TXT Record array to a String List
      *
@@ -89,21 +107,13 @@ public class DNSPublicKeyRecordRetriever implements PublicKeyRecordRetriever {
                 switch (aRr.getType()) {
                     case Type.TXT:
                         TXTRecord txt = (TXTRecord) aRr;
-                        if (txt.getStrings().size() == 1) {
-                            // This was required until dnsjava 2.0.6 because dnsjava
-                            // was escaping
-                            // the result like it was doublequoted (JDKIM-7).
-                            // records.add(((String)txt.getStrings().get(0)).replaceAll("\\\\",
-                            // ""));
-                            records.add(((String) txt.getStrings().get(0)));
+                        List<byte[]> list = txt.getStringsAsByteArrays();
+                        if (list.size() == 1) {
+                            records.add(convertToString(list.get(0)));
                         } else {
                             StringBuilder sb = new StringBuilder();
-                            for (String k : (Iterable<String>) txt.getStrings()) {
-                                // This was required until dnsjava 2.0.6 because
-                                // dnsjava was escaping
-                                // the result like it was doublequoted (JDKIM-7).
-                                // k = k.replaceAll("\\\\", "");
-                                sb.append(k);
+                            for (byte[] bytes : list) {
+                                sb.append(convertToString(bytes));
                             }
                             records.add(sb.toString());
                         }
@@ -116,6 +126,16 @@ public class DNSPublicKeyRecordRetriever implements PublicKeyRecordRetriever {
             records = null;
         }
         return records;
+    }
+
+    private static String convertToString(byte[] bytes) {
+        // We simply do as dnsjava library here: convert each byte into a
+        // char directly.
+        StringBuilder sb = new StringBuilder();
+        for (byte b: bytes) {
+            sb.append((char)b);
+        }
+        return sb.toString();
     }
 
 }
